@@ -11,12 +11,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use("/api/bus", require("./routes/busRoutes"));
+app.use("/api/routes", require("./routes/routeRoutes"));
+
 app.get("/", (req, res) => {
-    res.send("BusTrack API Running");
+  res.send("BusTrack Backend Running");
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
