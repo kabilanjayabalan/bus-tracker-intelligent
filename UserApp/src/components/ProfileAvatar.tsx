@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
-import {Colors} from '../theme/colors';
+import {useTheme} from '../theme/ThemeContext';
 
 interface ProfileAvatarProps {
   name?: string;
@@ -13,6 +13,8 @@ export function ProfileAvatar({
   size = 44,
   onPress,
 }: ProfileAvatarProps) {
+  const {theme} = useTheme();
+  const c = theme.colors;
   const initials = name
     .split(' ')
     .map(n => n[0])
@@ -29,13 +31,13 @@ export function ProfileAvatar({
             width: size,
             height: size,
             borderRadius: size / 2,
+            backgroundColor: c.accentGlow,
+            borderColor: c.accent,
           },
         ]}>
-        <View style={[styles.innerRing, {borderRadius: size / 2}]}>
-          <Text style={[styles.initials, {fontSize: size * 0.36}]}>
-            {initials}
-          </Text>
-        </View>
+        <Text style={[styles.initials, {fontSize: size * 0.36, color: c.accent}]}>
+          {initials}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -43,24 +45,16 @@ export function ProfileAvatar({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.accentGlow,
     borderWidth: 2,
-    borderColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.accent,
+    shadowColor: '#00E5A0',
     shadowOffset: {width: 0, height: 0},
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 6,
   },
-  innerRing: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   initials: {
-    color: Colors.accent,
     fontWeight: '700',
     letterSpacing: 1,
   },

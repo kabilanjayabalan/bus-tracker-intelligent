@@ -24,6 +24,7 @@ export interface BusData {
 
 export type RootStackParamList = {
   Login: undefined;
+  Signup: undefined;
   Home: undefined;
   BusList: { source: string; destination: string };
   BusDetails: { bus: BusData };

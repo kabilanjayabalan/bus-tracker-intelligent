@@ -1,5 +1,11 @@
 import {BusData} from '../types';
 
+export const allLocations = [
+  'Karur', 'Trichy', 'Salem', 'Erode', 'Coimbatore',
+  'Madurai', 'Chennai', 'Dindigul', 'Namakkal', 'Kulithalai',
+  'Musiri', 'Lalgudi', 'Pugalur', 'Thanjavur', 'Tirunelveli',
+];
+
 const karurToTrichyStops = [
   {name: 'Karur', latitude: 10.9601, longitude: 78.0766},
   {name: 'Pugalur', latitude: 10.9066, longitude: 78.2001},
@@ -107,4 +113,21 @@ export const popularRoutes = [
   {source: 'Trichy', destination: 'Madurai'},
   {source: 'Karur', destination: 'Coimbatore'},
   {source: 'Trichy', destination: 'Chennai'},
+];
+
+export interface SearchHistoryItem {
+  id: string;
+  source: string;
+  destination: string;
+  date: string;
+  busesFound: number;
+}
+
+export const searchHistory: SearchHistoryItem[] = [
+  {id: '1', source: 'Karur', destination: 'Trichy', date: '2026-03-16', busesFound: 5},
+  {id: '2', source: 'Salem', destination: 'Trichy', date: '2026-03-16', busesFound: 3},
+  {id: '3', source: 'Karur', destination: 'Erode', date: '2026-03-15', busesFound: 4},
+  {id: '4', source: 'Trichy', destination: 'Madurai', date: '2026-03-14', busesFound: 6},
+  {id: '5', source: 'Coimbatore', destination: 'Chennai', date: '2026-03-13', busesFound: 8},
+  {id: '6', source: 'Karur', destination: 'Coimbatore', date: '2026-03-12', busesFound: 2},
 ];

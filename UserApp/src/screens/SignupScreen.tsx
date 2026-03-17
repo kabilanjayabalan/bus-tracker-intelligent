@@ -7,14 +7,19 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useTheme} from '../theme/ThemeContext';
 import type {RootStackParamList} from '../types';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
 
-export function LoginScreen({navigation}: Props) {
+export function SignupScreen({navigation}: Props) {
   const {theme} = useTheme();
   const c = theme.colors;
+  
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   
   const logoAnim = useRef(new Animated.Value(0)).current;
   const formAnim = useRef(new Animated.Value(0)).current;
@@ -28,15 +33,19 @@ export function LoginScreen({navigation}: Props) {
     ]).start();
   }, [logoAnim, formAnim, buttonAnim]);
 
-  const handleLogin = () => {
-    if (!email || !password) {
-      Alert.alert('Hold on', 'Please enter your email and password.');
+  const handleSignup = () => {
+    if (!name || !email || !password) {
+      Alert.alert('Hold on', 'Please fill in all details.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Wait a sec', "Passwords don't match.");
       return;
     }
     navigation.replace('Home');
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleSignup = () => {
     setTimeout(() => navigation.replace('Home'), 800);
   };
 
@@ -46,6 +55,13 @@ export function LoginScreen({navigation}: Props) {
       
       <View style={[styles.bgCircle1, {backgroundColor: c.accentGlow}]} />
       <View style={[styles.bgCircle2, {backgroundColor: c.purpleGlow}]} />
+
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => navigation.goBack()}
+        hitSlop={{top: 20, bottom: 20, left: 20, right: 20}}>
+        <Text style={[styles.backIcon, {color: c.textPrimary}]}>←</Text>
+      </TouchableOpacity>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -57,12 +73,17 @@ export function LoginScreen({navigation}: Props) {
               <Text style={styles.logoEmoji}>🚌</Text>
             </View>
             <Text style={[styles.appName, {color: c.accent}]}>ROUTO</Text>
-            <Text style={[styles.tagline, {color: c.textSecondary}]}>Welcome back</Text>
+            <Text style={[styles.tagline, {color: c.textSecondary}]}>Create an account</Text>
           </Animated.View>
 
           <Animated.View style={[styles.formSection, {
             opacity: formAnim, transform: [{translateY: formAnim.interpolate({inputRange: [0, 1], outputRange: [40, 0]})}]
           }]}>
+            <View style={[styles.inputContainer, {backgroundColor: c.cardBg, borderColor: c.border}]}>
+              <Text style={[styles.inputIcon, {color: c.textMuted}]}>👤</Text>
+              <TextInput style={[styles.input, {color: c.textPrimary}]} placeholder="Full Name" placeholderTextColor={c.textMuted} value={name} onChangeText={setName} />
+            </View>
+
             <View style={[styles.inputContainer, {backgroundColor: c.cardBg, borderColor: c.border}]}>
               <Text style={[styles.inputIcon, {color: c.textMuted}]}>✉️</Text>
               <TextInput style={[styles.input, {color: c.textPrimary}]} placeholder="Email Address" placeholderTextColor={c.textMuted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
@@ -76,16 +97,20 @@ export function LoginScreen({navigation}: Props) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.forgotButton}>
-              <Text style={[styles.forgotText, {color: c.accent}]}>Forgot Password?</Text>
-            </TouchableOpacity>
+            <View style={[styles.inputContainer, {backgroundColor: c.cardBg, borderColor: c.border}]}>
+              <Text style={[styles.inputIcon, {color: c.textMuted}]}>🔒</Text>
+              <TextInput style={[styles.input, {color: c.textPrimary}]} placeholder="Confirm Password" placeholderTextColor={c.textMuted} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!isConfirmVisible} />
+              <TouchableOpacity onPress={() => setIsConfirmVisible(!isConfirmVisible)} style={styles.eyeButton}>
+                <Text style={styles.eyeIcon}>{isConfirmVisible ? '👁' : '👁‍🗨'}</Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
 
           <Animated.View style={[styles.buttonSection, {
             opacity: buttonAnim, transform: [{translateY: buttonAnim.interpolate({inputRange: [0, 1], outputRange: [30, 0]})}]
           }]}>
-            <TouchableOpacity style={[styles.loginButton, {backgroundColor: c.accent}]} onPress={handleLogin} activeOpacity={0.85}>
-              <Text style={[styles.loginButtonText, {color: c.primaryBg}]}>SIGN IN</Text>
+            <TouchableOpacity style={[styles.loginButton, {backgroundColor: c.accent}]} onPress={handleSignup} activeOpacity={0.85}>
+              <Text style={[styles.loginButtonText, {color: c.primaryBg}]}>SIGN UP</Text>
               <View style={styles.buttonGlow} />
             </TouchableOpacity>
 
@@ -95,15 +120,15 @@ export function LoginScreen({navigation}: Props) {
               <View style={[styles.dividerLine, {backgroundColor: c.border}]} />
             </View>
 
-            <TouchableOpacity style={[styles.googleButton, {backgroundColor: '#FFFFFF', borderColor: c.border}]} onPress={handleGoogleLogin} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.googleButton, {backgroundColor: theme.isDark ? '#FFFFFF' : '#FFFFFF', borderColor: c.border}]} onPress={handleGoogleSignup} activeOpacity={0.85}>
               <Text style={styles.googleIcon}>G</Text>
               <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
 
             <View style={styles.signupRow}>
-              <Text style={[styles.signupText, {color: c.textSecondary}]}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                <Text style={[styles.signupLink, {color: c.accent}]}>Sign Up</Text>
+              <Text style={[styles.signupText, {color: c.textSecondary}]}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={[styles.signupLink, {color: c.accent}]}>Log In</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -119,8 +144,14 @@ const styles = StyleSheet.create({
   bgCircle1: {position: 'absolute', top: -80, right: -80, width: 280, height: 280, borderRadius: 140},
   bgCircle2: {position: 'absolute', bottom: -60, left: -100, width: 250, height: 250, borderRadius: 125},
   
+  backButton: {
+    position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, left: 20, zIndex: 10,
+    width: 40, height: 40, justifyContent: 'center',
+  },
+  backIcon: {fontSize: 28, fontWeight: '300'},
+
   keyboardView: {flex: 1},
-  scrollContent: {flexGrow: 1, justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 40},
+  scrollContent: {flexGrow: 1, paddingHorizontal: 28, paddingVertical: 40, paddingTop: 80},
   
   logoSection: {alignItems: 'center', marginBottom: 35},
   logoContainer: {
@@ -133,7 +164,7 @@ const styles = StyleSheet.create({
   appName: {fontSize: 28, fontWeight: '900', letterSpacing: 6},
   tagline: {fontSize: 14, marginTop: 4, letterSpacing: 0.5},
   
-  formSection: {marginBottom: 30},
+  formSection: {marginBottom: 24},
   inputContainer: {
     flexDirection: 'row', alignItems: 'center', borderRadius: 16, 
     borderWidth: 1, paddingHorizontal: 16, marginBottom: 14, height: 56
@@ -142,9 +173,6 @@ const styles = StyleSheet.create({
   input: {flex: 1, fontSize: 15, fontWeight: '500'},
   eyeButton: {padding: 4},
   eyeIcon: {fontSize: 18},
-  
-  forgotButton: {alignSelf: 'flex-end', marginTop: -2},
-  forgotText: {fontSize: 13, fontWeight: '600'},
   
   buttonSection: {alignItems: 'center'},
   loginButton: {
@@ -172,7 +200,7 @@ const styles = StyleSheet.create({
   googleIcon: {fontSize: 20, fontWeight: '900', color: '#DB4437', marginRight: 12, fontStyle: 'italic'},
   googleButtonText: {fontSize: 15, fontWeight: '700', color: '#444'},
   
-  signupRow: {flexDirection: 'row', marginTop: 28, alignItems: 'center'},
+  signupRow: {flexDirection: 'row', marginTop: 24, alignItems: 'center'},
   signupText: {fontSize: 14},
   signupLink: {fontSize: 14, fontWeight: '700'},
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -6,182 +6,248 @@ import {
   StatusBar,
   FlatList,
   TouchableOpacity,
+  Animated,
+  Platform,
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {Colors} from '../theme/colors';
+import {useTheme} from '../theme/ThemeContext';
 import {BusCard} from '../components/BusCard';
 import {mockBuses} from '../data/mockData';
 import type {RootStackParamList, BusData} from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BusList'>;
 
-export function BusListScreen({navigation, route}: Props) {
-  const {source, destination} = route.params;
+// ── Loading skeleton ──────────────────────────────────────────────────────────
+function LoadingSkeleton() {
+  const {theme} = useTheme();
+  const c = theme.colors;
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
 
-  const handleBusPress = (bus: BusData) => {
-    navigation.navigate('BusDetails', {bus});
-  };
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {toValue: 1, duration: 750, useNativeDriver: true}),
+        Animated.timing(pulseAnim, {toValue: 0.4, duration: 750, useNativeDriver: true}),
+      ]),
+    ).start();
+  }, [pulseAnim]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primaryBg} />
+    <View style={{paddingHorizontal: 20}}>
+      {[1, 2, 3].map(i => (
+        <Animated.View
+          key={i}
+          style={[
+            skeletonStyles.card,
+            {backgroundColor: c.cardBg, borderColor: c.border, opacity: pulseAnim},
+          ]}>
+          {/* icon placeholder */}
+          <View style={[skeletonStyles.iconBox, {backgroundColor: c.borderLight}]} />
+          <View style={{flex: 1, gap: 8}}>
+            <View style={[skeletonStyles.line, {width: '55%', backgroundColor: c.borderLight}]} />
+            <View style={[skeletonStyles.line, {width: '38%', backgroundColor: c.borderLight}]} />
+            <View style={[skeletonStyles.line, {width: '72%', backgroundColor: c.borderLight, marginTop: 10}]} />
+          </View>
+        </Animated.View>
+      ))}
+    </View>
+  );
+}
 
-      {/* Header */}
-      <View style={styles.header}>
+const skeletonStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    marginBottom: 14,
+    gap: 14,
+  },
+  iconBox: {width: 46, height: 46, borderRadius: 14},
+  line: {height: 14, borderRadius: 7},
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function BusListScreen({navigation, route}: Props) {
+  const {theme} = useTheme();
+  const c = theme.colors;
+  const {source, destination} = route.params;
+  const [isLoading, setIsLoading] = useState(true);
+  const [buses, setBuses] = useState<BusData[]>([]);
+
+  // Header fade-in
+  const headerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(headerAnim, {toValue: 1, duration: 400, useNativeDriver: true}).start();
+    const timer = setTimeout(() => {
+      setBuses(mockBuses);
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [headerAnim]);
+
+  const handleBusPress = (bus: BusData) => navigation.navigate('BusDetails', {bus});
+
+  return (
+    <View style={[styles.container, {backgroundColor: c.primaryBg}]}>
+      <StatusBar barStyle={c.statusBarStyle} backgroundColor={c.primaryBg} />
+
+      {/* ── Header ── */}
+      <Animated.View style={[styles.header, {opacity: headerAnim}]}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, {backgroundColor: c.cardBg, borderColor: c.border}]}
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}>
-          <Text style={styles.backArrow}>←</Text>
+          <Text style={[styles.backArrow, {color: c.textPrimary}]}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <View style={styles.routeRow}>
-            <Text style={styles.routeCity}>{source}</Text>
-            <View style={styles.routeArrowContainer}>
-              <View style={styles.routeLine} />
-              <Text style={styles.routeArrowIcon}>→</Text>
-              <View style={styles.routeLine} />
+            {/* Source chip */}
+            <View style={[styles.cityChip, {backgroundColor: c.cardBg, borderColor: c.border}]}>
+              <Text style={[styles.cityDot, {color: '#10B981'}]}>●</Text>
+              <Text style={[styles.routeCity, {color: c.textPrimary}]}>{source}</Text>
             </View>
-            <Text style={styles.routeCity}>{destination}</Text>
+            <View style={[styles.arrowLine, {backgroundColor: c.accent}]} />
+            <Text style={[styles.arrowIcon, {color: c.accent}]}>›</Text>
+            <View style={[styles.arrowLine, {backgroundColor: c.accent}]} />
+            {/* Dest chip */}
+            <View style={[styles.cityChip, {backgroundColor: c.cardBg, borderColor: c.border}]}>
+              <Text style={[styles.cityDot, {color: '#EF4444'}]}>◆</Text>
+              <Text style={[styles.routeCity, {color: c.textPrimary}]}>{destination}</Text>
+            </View>
           </View>
-          <Text style={styles.busCount}>
-            {mockBuses.length} buses available
+          <Text style={[styles.busCount, {color: c.textSecondary}]}>
+            {isLoading ? '⌛ Searching for buses…' : `${buses.length} buses available`}
           </Text>
         </View>
+      </Animated.View>
+
+      {/* ── Info banner ── */}
+      <View style={[styles.infoBanner, {backgroundColor: c.cardBg, borderColor: c.border}]}>
+        {[
+          {icon: '🕐', label: 'Live tracking'},
+          {icon: '📍', label: 'Real-time ETA'},
+          {icon: '💺', label: 'Seat info'},
+        ].map((info, i, arr) => (
+          <React.Fragment key={i}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoEmoji}>{info.icon}</Text>
+              <Text style={[styles.infoText, {color: c.textSecondary}]}>{info.label}</Text>
+            </View>
+            {i < arr.length - 1 && (
+              <View style={[styles.infoSep, {backgroundColor: c.border}]} />
+            )}
+          </React.Fragment>
+        ))}
       </View>
 
-      {/* Route Info Banner */}
-      <View style={styles.infoBanner}>
-        <View style={styles.infoItem}>
-          <Text style={styles.infoEmoji}>🕐</Text>
-          <Text style={styles.infoText}>Live tracking</Text>
+      {/* ── Content ── */}
+      {isLoading ? (
+        <LoadingSkeleton />
+      ) : buses.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyEmoji}>🚌</Text>
+          <Text style={[styles.emptyTitle, {color: c.textPrimary}]}>No buses found</Text>
+          <Text style={[styles.emptySubtitle, {color: c.textSecondary}]}>
+            No buses are available for{'\n'}
+            <Text style={{fontWeight: '700'}}>{source} → {destination}</Text>
+            {'\n'}right now. Try a different route or check back later.
+          </Text>
+          <TouchableOpacity
+            style={[styles.tryAgainBtn, {backgroundColor: c.accentSubtle, borderColor: c.borderAccent}]}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}>
+            <Text style={[styles.tryAgainText, {color: c.accent}]}>← Try another route</Text>
+          </TouchableOpacity>
         </View>
-        <View style={styles.infoSep} />
-        <View style={styles.infoItem}>
-          <Text style={styles.infoEmoji}>📍</Text>
-          <Text style={styles.infoText}>Real-time ETA</Text>
-        </View>
-        <View style={styles.infoSep} />
-        <View style={styles.infoItem}>
-          <Text style={styles.infoEmoji}>💺</Text>
-          <Text style={styles.infoText}>Seat info</Text>
-        </View>
-      </View>
-
-      {/* Bus List */}
-      <FlatList
-        data={mockBuses}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        renderItem={({item, index}) => (
-          <BusCard
-            bus={item}
-            index={index}
-            onPress={() => handleBusPress(item)}
-          />
-        )}
-      />
+      ) : (
+        <FlatList
+          data={buses}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={({item, index}) => (
+            <BusCard bus={item} index={index} onPress={() => handleBusPress(item)} />
+          )}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.primaryBg,
-  },
+  container: {flex: 1},
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 56 : 44,
+    paddingBottom: 16,
+    gap: 12,
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: Colors.cardBg,
     borderWidth: 1,
-    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    flexShrink: 0,
   },
-  backArrow: {
-    fontSize: 22,
-    color: Colors.textPrimary,
-    fontWeight: '300',
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  routeRow: {
+  backArrow: {fontSize: 22, fontWeight: '300'},
+  headerInfo: {flex: 1},
+
+  routeRow: {flexDirection: 'row', alignItems: 'center', gap: 4},
+  cityChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    gap: 5,
   },
-  routeCity: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  routeArrowContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 12,
-  },
-  routeLine: {
-    width: 12,
-    height: 2,
-    backgroundColor: Colors.accent,
-    borderRadius: 1,
-  },
-  routeArrowIcon: {
-    fontSize: 14,
-    color: Colors.accent,
-    fontWeight: '700',
-    marginHorizontal: 2,
-  },
-  busCount: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
+  cityDot: {fontSize: 10},
+  routeCity: {fontSize: 14, fontWeight: '700'},
+  arrowLine: {width: 10, height: 2, borderRadius: 1},
+  arrowIcon: {fontSize: 16, fontWeight: '700'},
+  busCount: {fontSize: 13, marginTop: 6},
+
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cardBg,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    marginBottom: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    marginBottom: 14,
   },
-  infoItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  infoEmoji: {
+  infoItem: {flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5},
+  infoEmoji: {fontSize: 14},
+  infoText: {fontSize: 12, fontWeight: '600'},
+  infoSep: {width: 1, height: 20},
+
+  listContent: {paddingHorizontal: 16, paddingBottom: 20},
+
+  emptyState: {alignItems: 'center', paddingTop: 70, paddingHorizontal: 40},
+  emptyEmoji: {fontSize: 70, marginBottom: 18},
+  emptyTitle: {fontSize: 22, fontWeight: '800', marginBottom: 10},
+  emptySubtitle: {
     fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 28,
   },
-  infoText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '600',
+  tryAgainBtn: {
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
   },
-  infoSep: {
-    width: 1,
-    height: 20,
-    backgroundColor: Colors.border,
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
+  tryAgainText: {fontSize: 14, fontWeight: '700'},
 });
