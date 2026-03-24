@@ -1,22 +1,41 @@
 const mongoose = require("mongoose");
 
 const busSchema = new mongoose.Schema({
-    busNumber:{
-        type:String,
-        required:true
-    },
-    routeId:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"Route"
-    },
-    currentLocation:{
-        lat:Number,
-        lng:Number
-    },
-    speed:{
-        type:Number,
-        default:30
-    }
-});
+  busNumber: String,
+  routeName: String,
 
-module.exports = mongoose.model("Bus",busSchema);
+  totalSeats: Number,
+  availableSeats: Number,
+
+  currentLocation: {
+    latitude: Number,
+    longitude: Number
+  },
+
+  estimatedArrivalTime: String,
+  nextStop: String,
+  departureTime: String,
+
+  status: {
+    type: String,
+    enum: ["Running", "Stopped", "Delayed"],
+    default: "Running"
+  },
+
+  stops: [
+    {
+      name: String,
+      order: Number
+    }
+  ],
+
+  routeCoordinates: [
+    {
+      latitude: Number,
+      longitude: Number
+    }
+  ]
+
+}, { timestamps: true });
+
+module.exports = mongoose.model("Bus", busSchema);

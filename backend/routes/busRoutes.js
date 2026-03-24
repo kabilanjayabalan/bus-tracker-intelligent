@@ -5,14 +5,14 @@ const {
   createBus,
   getAllBuses,
   searchBus,
-  updateLocation,
-  getBusById
+  getBusById,
+  updateLocation
 } = require("../controllers/busController");
 
 router.post("/", createBus);
 router.get("/", getAllBuses);
 router.get("/search", searchBus);
-router.put("/location", updateLocation);
 router.get("/:id", getBusById);
+router.put("/location", updateLocation);
 
 module.exports = router;

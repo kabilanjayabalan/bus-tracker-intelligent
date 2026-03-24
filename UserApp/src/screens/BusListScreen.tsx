@@ -8,11 +8,12 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
+  Alert,
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useTheme} from '../theme/ThemeContext';
 import {BusCard} from '../components/BusCard';
-import {mockBuses} from '../data/mockData';
+import {busAPI} from '../utils/api';
 import type {RootStackParamList, BusData} from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BusList'>;
@@ -76,18 +77,40 @@ export function BusListScreen({navigation, route}: Props) {
   const {source, destination} = route.params;
   const [isLoading, setIsLoading] = useState(true);
   const [buses, setBuses] = useState<BusData[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Header fade-in
   const headerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(headerAnim, {toValue: 1, duration: 400, useNativeDriver: true}).start();
-    const timer = setTimeout(() => {
-      setBuses(mockBuses);
+    fetchBuses();
+  }, [source, destination]);
+
+  const fetchBuses = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Search buses from backend
+      const response = await busAPI.searchBuses(source, destination);
+
+      if (response.success && response.data) {
+        // Format backend response to match BusData type
+        const formattedBuses = Array.isArray(response.data) ? response.data : [];
+        setBuses(formattedBuses);
+      } else {
+        setError(response.error || 'Failed to fetch buses');
+        Alert.alert('Error', response.error || 'Failed to fetch buses');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      Alert.alert('Error', errorMessage);
+    } finally {
       setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [headerAnim]);
+    }
+  };
 
   const handleBusPress = (bus: BusData) => navigation.navigate('BusDetails', {bus});
 

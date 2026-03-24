@@ -5,14 +5,17 @@
 import React from 'react';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {ThemeProvider} from './src/theme/ThemeContext';
+import {AuthProvider} from './src/utils/AuthContext';
 import {AppNavigator} from './src/navigation/AppNavigator';
 
 function App() {
   return (
     <ThemeProvider>
-      <SafeAreaProvider>
-        <AppNavigator />
-      </SafeAreaProvider>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <AppNavigator />
+        </SafeAreaProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

@@ -1,10 +1,11 @@
 import React, {useState, useRef, useEffect} from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  StatusBar, Animated, KeyboardAvoidingView, Platform, ScrollView, Alert
+  StatusBar, Animated, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useTheme} from '../theme/ThemeContext';
+import {useAuth} from '../utils/AuthContext';
 import type {RootStackParamList} from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
@@ -12,11 +13,13 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
 export function SignupScreen({navigation}: Props) {
   const {theme} = useTheme();
   const c = theme.colors;
+  const {signup, isLoading} = useAuth();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
   
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
@@ -33,20 +36,33 @@ export function SignupScreen({navigation}: Props) {
     ]).start();
   }, [logoAnim, formAnim, buttonAnim]);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!name || !email || !password) {
-      Alert.alert('Hold on', 'Please fill in all details.');
+      setLocalError('Please fill in all details.');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Wait a sec', "Passwords don't match.");
+      setLocalError("Passwords don't match.");
       return;
     }
-    navigation.replace('Home');
+    if (password.length < 6) {
+      setLocalError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    try {
+      setLocalError(null);
+      await signup(name, email, password);
+      navigation.replace('Home');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Signup failed. Please try again.';
+      setLocalError(errorMessage);
+      Alert.alert('Signup Failed', errorMessage);
+    }
   };
 
   const handleGoogleSignup = () => {
-    setTimeout(() => navigation.replace('Home'), 800);
+    Alert.alert('Coming Soon', 'Google signup will be available soon.');
   };
 
   return (
@@ -109,8 +125,23 @@ export function SignupScreen({navigation}: Props) {
           <Animated.View style={[styles.buttonSection, {
             opacity: buttonAnim, transform: [{translateY: buttonAnim.interpolate({inputRange: [0, 1], outputRange: [30, 0]})}]
           }]}>
-            <TouchableOpacity style={[styles.loginButton, {backgroundColor: c.accent}]} onPress={handleSignup} activeOpacity={0.85}>
-              <Text style={[styles.loginButtonText, {color: c.primaryBg}]}>SIGN UP</Text>
+            {localError && (
+              <View style={[styles.errorContainer, {backgroundColor: '#FF4757'}]}>
+                <Text style={styles.errorText}>{localError}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity 
+              style={[styles.loginButton, {backgroundColor: isLoading ? c.borderLight : c.accent}]} 
+              onPress={handleSignup}
+              activeOpacity={0.85}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={c.primaryBg} />
+              ) : (
+                <Text style={[styles.loginButtonText, {color: c.primaryBg}]}>SIGN UP</Text>
+              )}
               <View style={styles.buttonGlow} />
             </TouchableOpacity>
 
@@ -120,14 +151,19 @@ export function SignupScreen({navigation}: Props) {
               <View style={[styles.dividerLine, {backgroundColor: c.border}]} />
             </View>
 
-            <TouchableOpacity style={[styles.googleButton, {backgroundColor: theme.isDark ? '#FFFFFF' : '#FFFFFF', borderColor: c.border}]} onPress={handleGoogleSignup} activeOpacity={0.85}>
+            <TouchableOpacity 
+              style={[styles.googleButton, {backgroundColor: theme.isDark ? '#FFFFFF' : '#FFFFFF', borderColor: c.border}]} 
+              onPress={handleGoogleSignup}
+              activeOpacity={0.85}
+              disabled={isLoading}
+            >
               <Text style={styles.googleIcon}>G</Text>
               <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
 
             <View style={styles.signupRow}>
               <Text style={[styles.signupText, {color: c.textSecondary}]}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={isLoading}>
                 <Text style={[styles.signupLink, {color: c.accent}]}>Log In</Text>
               </TouchableOpacity>
             </View>
@@ -175,6 +211,13 @@ const styles = StyleSheet.create({
   eyeIcon: {fontSize: 18},
   
   buttonSection: {alignItems: 'center'},
+  errorContainer: {
+    width: '100%', paddingHorizontal: 12, paddingVertical: 10,
+    borderRadius: 8, marginBottom: 12, alignItems: 'center'
+  },
+  errorText: {
+    color: '#FFFFFF', fontSize: 13, fontWeight: '600'
+  },
   loginButton: {
     width: '100%', borderRadius: 16, height: 56, alignItems: 'center', 
     justifyContent: 'center', shadowColor: '#00E5A0', shadowOffset: {width: 0, height: 8}, 
